@@ -554,33 +554,18 @@ void ActualiserQueueHistorique(char queueHistoriqueF[], char direction, bool man
 //##################################################################################################################################################################################
 void GenerationFruit(char terrainF[][53])
 {
-  Serial.println(hauteur*largeur); delay(500);
   Serial.println("GenerationFruit"); delay(500);
-  
-  int caseLibreI[hauteur*largeur];
-  int count = 0;
-  int caseLibreJ[hauteur*largeur];
 
-  Serial.println("case done"); delay(500);
-
-  for (int i = 0; i < hauteur; i++)
-  {
-    for (int j = 0; j < largeur; j++)
-    {
-      if (terrainF[i][j] == ' ')
-      {
-        caseLibreI[count] = i;
-        caseLibreJ[count] = j;
-        count++;
-      }
-    }
+  int i = random(hauteur);
+  int j = random(largeur);
+  while (terrainF[i][j] != ' ') {
+    int i = random(hauteur);
+    int j = random(largeur);
   }
-
-  Serial.println("count done"); delay(500);
   
-  int r = random(count);
-
-  SetElement(terrainF, caseLibreI[r], caseLibreJ[r], 'F');
+  SetElement(i, j, 'F');
+  
+  Serial.print("Fruit en :");Serial.print(i);Serial.print("x");Serial.println(j); delay(2000);
 
 }
 
