@@ -72,7 +72,8 @@ void setup() {
 // ATTENTION : pour setCursor et begin cest colonne ligne et non ligne colonne
 
 void loop() {
-  
+  Serial.print("Start:");
+  Serial.println(start);
   if (start) {
       Serial.println("if start");
       //écran d'accueil
@@ -178,9 +179,24 @@ void loop() {
   
 } //fin void loop
 
+void SetElement(char terrain[][53], int i1, int j2, char element, int r=255, int g=255, int b=255) {
+  if (element = ' ') {
+    TFTscreen.stroke(0, 0, 0);
+    TFTscreen.rect(3*j2, 3*i1, 3, 3);
+    TFTscreen.point(3*j2+1, 3*i1+1);
+  }
+  else if (element = 'F') {
+    TFTscreen.stroke(r, g, b);
+    TFTscreen.circle(3*j2+1, 3*i1+1, 1);
+  }
+  else {
+    TFTscreen.stroke(r, g, b);
+    TFTscreen.rect(3*j2, 3*i1, 3, 3);
+  }
+}
+
 void Snake(bool solo)
 {
-
   if(initialisation)
   {
     // la fonction SetElement a besoin d'un tableau rempli
@@ -591,23 +607,6 @@ void SetElement(char terrain[][53], int i1, int j2, char element) {
   }
 }
 */
-
-
-void SetElement(char terrain[][53], int i1, int j2, char element, int r=255, int g=255, int b=255) {
-  if (element = ' ') {
-  	TFTscreen.stroke(0, 0, 0);
-  	TFTscreen.rect(3*j2, 3*i1, 3, 3);
-  	TFTscreen.point(3*j2+1, 3*i1+1);
-  }
-  else if (element = 'F') {
-    TFTscreen.stroke(r, g, b);
-  	TFTscreen.circle(3*j2+1, 3*i1+1, 1);
-  }
-  else {
-    TFTscreen.stroke(r, g, b);
-  	TFTscreen.rect(3*j2, 3*i1, 3, 3);
-  }
-}
 
 
 void BluetoothWrite(char Char)
