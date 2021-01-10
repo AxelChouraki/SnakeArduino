@@ -71,6 +71,7 @@ void setup() {
 //Trouver meilleur lettre ou caractère pour l'affichage?
 // ATTENTION : pour setCursor et begin cest colonne ligne et non ligne colonne
 
+//##################################################################################################################################################################################
 void loop() {
   Serial.print("Start:");
   Serial.println(start);
@@ -154,48 +155,50 @@ void loop() {
       gameOn = true;
     }
   }
-
   if(gameOn){ // boucle de 500ms
     hostPlay = true;
-    Snake(solo);
+    Snake(solo, &queue, &queue1, terrain, posActuelle, queueHistorique, &start, &gameOn, &initialisation, &death);
     delay(125);
     hostPlay = false;
 
     hostUpdate = true;
     updateFromHost = true;
-    Snake(solo);
+    Snake(solo, &queue, &queue1, terrain, posActuelle, queueHistorique, &start, &gameOn, &initialisation, &death);
     delay(125);
     hostUpdate = false;
 
-    Snake(solo); //client joue car hostPlay and hostUpdate sont false
+    Snake(solo, &queue, &queue1, terrain, posActuelle, queueHistorique, &start, &gameOn, &initialisation, &death); //client joue car hostPlay and hostUpdate sont false
     delay(125);
 
     hostUpdate = true;
     updateFromHost = false;
-    Snake(solo);
+    Snake(solo, &queue, &queue1, terrain, posActuelle, queueHistorique, &start, &gameOn, &initialisation, &death);
     delay(125);
     hostUpdate = false;
   }
   
 } //fin void loop
 
-void SetElement(char terrain[][53], int i1, int j2, char element, int r=255, int g=255, int b=255) {
-  if (element = ' ') {
+//##################################################################################################################################################################################
+void SetElement(int i1, int j2, char element, int r=255, int g=255, int b=255) {
+  if (element == ' ') {
     TFTscreen.stroke(0, 0, 0);
     TFTscreen.rect(3*j2, 3*i1, 3, 3);
     TFTscreen.point(3*j2+1, 3*i1+1);
   }
-  else if (element = 'F') {
+  else if (element == 'F') {
     TFTscreen.stroke(r, g, b);
     TFTscreen.circle(3*j2+1, 3*i1+1, 1);
   }
   else {
-    TFTscreen.stroke(r, g, b);
+    TFTscreen.stroke(255, 255, 255);
     TFTscreen.rect(3*j2, 3*i1, 3, 3);
   }
 }
 
-void Snake(bool solo)
+//##################################################################################################################################################################################
+void Snake(bool solo, int* queue, int* queue1, char terrain[][largeur], int posActuelle[2], char queueHistorique,
+            bool* start, bool* gameOn, bool* initialisation, bool* death)
 {
   if(initialisation)
   {
@@ -225,51 +228,64 @@ void Snake(bool solo)
 */
   
     //initialisation des variables
+    TFTscreen.background(0, 0, 0);
     if(solo)
     {
-      SetElement(terrain, hauteur/2, largeur/2, 'U');
+      Serial.println("solo");delay(200);
+      SetElement(hauteur/2, largeur/2, 'U');
+      Serial.println("setElement");delay(500);
       posActuelle[0] = hauteur / 2;
       posActuelle[1] = largeur / 2;
-      queue = 0;
-      memset(queueHistorique, ' ', queue);
-      start = false;
-      death = false;
+      Serial.println(posActuelle[0]);delay(100);
+      Serial.println(posActuelle[1]);delay(500);
+      *queue = 0;
+      memset(queueHistorique, ' ', *queue);
+      Serial.println("memset done");delay(100);
+      *start = false;
+      *death = false;
       GenerationFruit(terrain);
-      delay(500);  
+      Serial.println("FruitDone");delay(500);
+      delay(500);
     }
     else
     {
       //init j1
-      SetElement(terrain, hauteur/2, largeur/4, 'U');
+      SetElement(hauteur/2, largeur/4, 'U');
       posActuelle[0] = hauteur / 2;
       posActuelle[1] = largeur / 4;
-      queue = 0;
-      memset(queueHistorique, ' ', queue);
+      *queue = 0;
+      memset(queueHistorique, ' ', *queue);
       
       //init j2
-      SetElement(terrain, hauteur/2, largeur*3/4, 'U');
+      SetElement(hauteur/2, largeur*3/4, 'U');
       posActuelle1[0] = hauteur / 2;
       posActuelle1[1] = largeur * 3 / 4;
-      queue1 = 0;
-      memset(queueHistorique1, ' ', queue1);
+      *queue1 = 0;
+      memset(queueHistorique1, ' ', *queue1);
 
       //init gameInfo
-      start = false;
-      death = false;
+      *start = false;
+      *death = false;
       GenerationFruit(terrain);
       delay(500);
-    }        
+    }
+    Serial.print("Start:");
+    Serial.println(*start);delay(500);
   }
 
+  Serial.println("InitEnd");delay(500);
 
   haut = digitalRead(pinHaut);
   bas = digitalRead(pinBas);
   droite = digitalRead(pinDroite);
   gauche = digitalRead(pinGauche);
+  readSerial(&haut, &bas, &gauche, &droite);
+  Serial.println(haut);delay(100);
+  Serial.print("Death:");Serial.println(*death);delay(100);
+  
 
 
-
-  if (death)
+  if (*death)
   {
     if(solo){
       TFTscreen.background(0,0,0);
@@ -300,13 +316,13 @@ void Snake(bool solo)
 
     if(haut)
     {
-      start = true;
-      death = false;
+      *start = true;
+      *death = false;
     }
   }
 
   if(solo or (isHost && hostPlay)){
-    TourDeJeu(solo, isHost, haut, bas, gauche, droite, queue, terrain, posActuelle, queueHistorique);
+    TourDeJeu(solo, isHost, haut, bas, gauche, droite, *queue, terrain, posActuelle, queueHistorique);
   }
   
   else if(hostUpdate){
@@ -316,19 +332,19 @@ void Snake(bool solo)
       {
         char temp = BluetoothRead();
 
-        if(temp == 'h'){TourDeJeu(solo, isHost, 1, 0, 0, 0, queue, terrain, posActuelle, queueHistorique);}
-        else if(temp == 'b'){TourDeJeu(solo, isHost, 0, 1, 0, 0, queue, terrain, posActuelle, queueHistorique);}
-        else if(temp == 'g'){TourDeJeu(solo, isHost, 0, 0, 1, 0, queue, terrain, posActuelle, queueHistorique);}
-        else if(temp == 'd'){TourDeJeu(solo, isHost, 0, 0, 0, 1, queue, terrain, posActuelle, queueHistorique);}  
+        if(temp == 'h'){TourDeJeu(solo, isHost, 1, 0, 0, 0, *queue, terrain, posActuelle, queueHistorique);}
+        else if(temp == 'b'){TourDeJeu(solo, isHost, 0, 1, 0, 0, *queue, terrain, posActuelle, queueHistorique);}
+        else if(temp == 'g'){TourDeJeu(solo, isHost, 0, 0, 1, 0, *queue, terrain, posActuelle, queueHistorique);}
+        else if(temp == 'd'){TourDeJeu(solo, isHost, 0, 0, 0, 1, *queue, terrain, posActuelle, queueHistorique);}  
       }
       else //il faut update l'hote
       {
         char temp = BluetoothRead();
   
-        if(temp == 'h'){TourDeJeu(solo, isHost, 1, 0, 0, 0, queue1, terrain, posActuelle1, queueHistorique1);}
-        else if(temp == 'b'){TourDeJeu(solo, isHost, 0, 1, 0, 0, queue1, terrain, posActuelle1, queueHistorique1);}
-        else if(temp == 'g'){TourDeJeu(solo, isHost, 0, 0, 1, 0, queue1, terrain, posActuelle1, queueHistorique1);}
-        else if(temp == 'd'){TourDeJeu(solo, isHost, 0, 0, 0, 1, queue1, terrain, posActuelle1, queueHistorique1);}  
+        if(temp == 'h'){TourDeJeu(solo, isHost, 1, 0, 0, 0, *queue1, terrain, posActuelle1, queueHistorique1);}
+        else if(temp == 'b'){TourDeJeu(solo, isHost, 0, 1, 0, 0, *queue1, terrain, posActuelle1, queueHistorique1);}
+        else if(temp == 'g'){TourDeJeu(solo, isHost, 0, 0, 1, 0, *queue1, terrain, posActuelle1, queueHistorique1);}
+        else if(temp == 'd'){TourDeJeu(solo, isHost, 0, 0, 0, 1, *queue1, terrain, posActuelle1, queueHistorique1);}  
       }
     }  
   }
@@ -340,11 +356,12 @@ void Snake(bool solo)
 
   else if(isHost ==false && hostPlay == false)
   {
-    TourDeJeu(solo, isHost, haut, bas, gauche, droite, queue1, terrain, posActuelle1, queueHistorique1);
+    TourDeJeu(solo, isHost, haut, bas, gauche, droite, *queue1, terrain, posActuelle1, queueHistorique1);
   }
   
 }//fin Snake
 
+//##################################################################################################################################################################################
 void TourDeJeu(bool solo, bool isHost, int haut, int bas, int gauche, int droite, int queue, char terrain[][largeur], int posActuelle[], char queueHistorique[])
 {
   //On assigne des priorités aux directions en cas de conflit càd si plusieurs boutons sont pressés en même temps : haut > droite > bas > gauche
@@ -439,6 +456,7 @@ void TourDeJeu(bool solo, bool isHost, int haut, int bas, int gauche, int droite
 }
 
 
+//##################################################################################################################################################################################
 void Deplacement(char terrainF[][53], int iAvant, int jAvant, int iApres, int jApres, char queueHistoriqueF[], int queueF, char direction, int posActuelleF[]) {
   //mise à jour de l'avant du serpent
   SetElement(terrainF, iAvant, jAvant, 'u');
@@ -482,6 +500,7 @@ void Deplacement(char terrainF[][53], int iAvant, int jAvant, int iApres, int jA
   
 }
 
+//##################################################################################################################################################################################
 void Mange(char terrainF[][53], int iAvant, int jAvant, int iApres, int jApres, char queueHistoriqueF[], int queueF, char direction, int posActuelleF[]) {
   SetElement(terrainF, iAvant, jAvant, 'u');
   SetElement(terrainF, iApres, jApres, 'U');
@@ -490,6 +509,7 @@ void Mange(char terrainF[][53], int iAvant, int jAvant, int iApres, int jApres, 
   GenerationFruit(terrainF);
 }
 
+//##################################################################################################################################################################################
 void ActualiserPosition(int posActuelleF[], char direction)
 {
   switch (direction) {
@@ -512,6 +532,7 @@ void ActualiserPosition(int posActuelleF[], char direction)
   
 }
 
+//##################################################################################################################################################################################
 void ActualiserQueueHistorique(char queueHistoriqueF[], char direction, bool mange, int queueF)
 {
   if (mange)
@@ -528,12 +549,16 @@ void ActualiserQueueHistorique(char queueHistoriqueF[], char direction, bool man
   }
 }
 
+//##################################################################################################################################################################################
 void GenerationFruit(char terrainF[][53])
 {
-  int caseLibreI[64];
-  int count = 0;
-  int caseLibreJ[64];
+  Serial.println("GenerationFruit"); delay(500);
   
+  int caseLibreI[hauteur*largeur];
+  int count = 0;
+  int caseLibreJ[hauteur*largeur];
+
+  Serial.println("case done"); delay(500);
 
   for (int i = 0; i < hauteur; i++)
   {
@@ -547,6 +572,8 @@ void GenerationFruit(char terrainF[][53])
       }
     }
   }
+
+  Serial.println("count done"); delay(500);
   
   int r = random(count);
 
