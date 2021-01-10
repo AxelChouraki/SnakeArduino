@@ -243,6 +243,8 @@ void Snake(bool solo, int* queue, int* queue1, char terrain[][largeur], int posA
       Serial.println("memset done");delay(100);
       *start = false;
       *death = false;
+      Serial.print("nbr_pixels:");
+      Serial.println(hauteur*largeur); delay(500);
       GenerationFruit(terrain);
       Serial.println("FruitDone");delay(500);
       delay(500);
@@ -552,6 +554,7 @@ void ActualiserQueueHistorique(char queueHistoriqueF[], char direction, bool man
 //##################################################################################################################################################################################
 void GenerationFruit(char terrainF[][53])
 {
+  Serial.println(hauteur*largeur); delay(500);
   Serial.println("GenerationFruit"); delay(500);
   
   int caseLibreI[hauteur*largeur];
