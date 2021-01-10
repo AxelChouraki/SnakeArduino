@@ -1,5 +1,8 @@
 #include <Vector.h> // pour utiliser les vecteurs
 #include <LiquidCrystal.h> //librairie pour utiliser un lcd
+// include TFT and SPI libraries for the screen
+#include <TFT.h>  
+#include <SPI.h>
 
 //Initialisation bluetooth
 //bluetoothSerial
@@ -17,18 +20,14 @@ int droite;
 int gauche;
 int bas;
 
-//pin du lcd
-int pin1 = 5;
-int pin2 = 4;
-int pin3 = 3;
-int pin4 = 2;
-int rs = 12;
-//int rw = 8;
-int enable = 11;
-LiquidCrystal lcd(rs, enable, pin1, pin2, pin3, pin4); // mettre tous les pins utilisés par le lcd
+//pin de l'écran
+#define cs   53
+#define dc   49
+#define rst  47
+TFT TFTscreen = TFT(cs, dc, rst);  // création de l'instance de l'écran
 
-const int hauteur = 4; // hauteur de l'écran lcd
-const int largeur = 16; // largeur de l'écran lcd
+const int hauteur = 42; // hauteur de l'écran
+const int largeur = 53; // largeur de l'écran
 
 //variable du jeu solo
 int queue = 0;
@@ -54,41 +53,17 @@ bool hostUpdate; //true pour que l'hote update les données
 bool updateFromHost;
 char DernierDeplacement;
 
-
 void setup() {
-
-  Serial.begin(9600); // opens serial port, sets data rate to 9600 bps -->debug
-  lcd.begin(hauteur/2, largeur); //dimension du lcd 
-  lcd.display(); // "allume" l'écran
+  Serial.begin(9600); // opens serial port, sets data rate to 9600 bps -->debug & control from computer
 
   randomSeed(analogRead(0));
+  TFTscreen.begin();  // initialisation de la librairie
+  TFTscreen.background(0,0,0);  // mets le fond en Noir (r,g,b)
 
   pinMode(pinHaut, INPUT);
   pinMode(pinGauche, INPUT);
   pinMode(pinDroite, INPUT);
   pinMode(pinBas, INPUT);
-
-  // Creation des figures avec liquidCrystal, appelable avec "byte(numeroDeFigure)", écrivable avec lcd.write seulement !!!
-  // On code les 7 dispositions suivantes:
-  // 0: 'u'  1: 'u'  2: 'u'  3:'F'  4:'_'  5:'F'  6:'_'
-  //    'u'     'F'     '_'    'u'    'u'    '_'    'F'
-  // Serpent : B01110, B01010, B01110, B00000
-  // Fruit :   B10101, B01110, B01110, B00100
-  // Vide :    B00000, B00000, B00000, B00000
-  byte uu[8] = {B01110, B01010, B01110, B00000, B01110, B01010, B01110, B00000};
-  lcd.createChar(0, uu); 
-  byte uf[8] = {B01110, B01010, B01110, B00000, B10101, B01110, B01110, B00100};
-  lcd.createChar(1, uf);
-  byte u_[8] = {B01110, B01010, B01110, B00000, B00000, B00000, B00000, B00000};
-  lcd.createChar(2, u_);
-  byte fu[8] = {B10101, B01110, B01110, B00100, B01110, B01010, B01110, B00000};
-  lcd.createChar(3, fu);
-  byte _u[8] = {B00000, B00000, B00000, B00000, B01110, B01010, B01110, B00000};
-  lcd.createChar(4, _u);
-  byte f_[8] = {B10101, B01110, B01110, B00100, B00000, B00000, B00000, B00000};
-  lcd.createChar(5, f_);
-  byte _f[8] = {B00000, B00000, B00000, B00000, B10101, B01110, B01110, B00100};
-  lcd.createChar(6, _f);
 }
 
 // TODO : MESURER LA DUREE DEXECUTION DE LA BOUCLE UNE FOIS LE CODE FINI(optimiser ou pas)
@@ -99,82 +74,78 @@ void setup() {
 void loop() {
   
   if (start) {
-
+      Serial.println("if start");
       //écran d'accueil
-      
-      lcd.clear();
-      lcd.setCursor(0,0);
-      lcd.write("Air Snake");
-      delay(1000);
-
+      TFTscreen.background(0,0,0);
+      TFTscreen.stroke(255, 255, 255);
+      TFTscreen.setTextSize(2);  // taille de (int i) * 10 pixels
+      TFTscreen.text("Air Snake", 25, 10);  // .text(text, xPos, yPos)
       //choix solo/duo
+      TFTscreen.setTextSize(1);
+      TFTscreen.text("Up to play solo", 6, 45);
+      TFTscreen.text("Down to play duo", 6, 58);
+      delay(2000);
 
-      lcd.clear();
-      lcd.setCursor(0,0);
-      lcd.write("Up to play solo");
-      lcd.setCursor(1,0);
-      lcd.write("Down to play duo");
+      readSerial(&haut, &bas, &gauche, &droite);
 
     // SOLO GAME
       if(haut){
+        Serial.println("if haut");
         initialisation = true;
         solo = true;
         gameOn = true;
+        start = false;
       }
 
       else if(bas){
       solo = false;
-      lcd.clear();
-      lcd.setCursor(0,0);
-      lcd.write("Up to host");
-      lcd.setCursor(1,0);
-      lcd.write("Down to join");
+      TFTscreen.background(0,0,0);
+      TFTscreen.stroke(255, 255, 255);
+      TFTscreen.setTextSize(2);
+      TFTscreen.text("Air Snake", 25, 10);
+      TFTscreen.setTextSize(1);
+      TFTscreen.text("Up to host", 6, 45);
+      TFTscreen.text("Down to join", 6, 58);
 
         if(haut){
           //Initialiser bluetooth module en master,avec le bon mode de connection et l'IP de la slave
-          BluetoothWrite("connection");
+          BluetoothWrite('c');
           isHost = true;
         }
         else if(bas){
           //Initialiser bluetooth module en slave
           isHost = false;
-          if(BluetoothRead() == "connection"){
+          if(BluetoothRead() == 'c'){
             launchBeginScreen = true;
           }
         }
       }
 
     if(launchBeginScreen){
-      lcd.clear();
+      TFTscreen.background(0,0,0);
       if(isHost)
       {
-        lcd.setCursor(0,0);
-        lcd.write("Start : Leftside");
+        TFTscreen.text("Start : Leftside", 6, 5);
       }
       else{
-        lcd.setCursor(0,0);
-        lcd.write("Start : Rightside");
+      	TFTscreen.text("Start : Rightside", 6, 5);
       }
       delay(2000);
   
-      lcd.clear();
-      lcd.setCursor(0,0);
-      lcd.write("Start in 3s");
+      TFTscreen.background(0,0,0);
+      TFTscreen.text("Start in 3s", 6, 5);
       delay(1000);
   
-      lcd.clear();
-      lcd.setCursor(0,0);
-      lcd.write("Start in 2s");
+      TFTscreen.background(0,0,0);
+      TFTscreen.text("Start in 2s", 6, 5);
       delay(1000);
   
-      lcd.clear();
-      lcd.setCursor(0,0);
-      lcd.write("Start in 1s");
+      TFTscreen.background(0,0,0);
+      TFTscreen.text("Start in 1s", 6, 5);
       delay(1000);
-  
-      lcd.clear();
-      lcd.setCursor(0,0);
-      lcd.write("Start in 0s");
+
+      TFTscreen.background(0,0,0);
+      TFTscreen.text("Start in 0s", 6, 5);
       delay(1000);
   
       initialisation = true;
@@ -209,6 +180,7 @@ void loop() {
 
 void Snake(bool solo)
 {
+
   if(initialisation)
   {
     // la fonction SetElement a besoin d'un tableau rempli
@@ -284,11 +256,9 @@ void Snake(bool solo)
   if (death)
   {
     if(solo){
-      lcd.clear();
-      lcd.setCursor(0,0);
-      lcd.print("Game Over");
-      lcd.setCursor(0,1);
-      lcd.print("UP : Recommencer");
+      TFTscreen.background(0,0,0);
+      TFTscreen.text("Game Over", 6, 5);
+      TFTscreen.text("UP : Recommencer", 6, 20);
   
       /* Si on a un plus grand écran
       SetElementLCD(terrain, 1, largeur / 3, "Game Over");
@@ -300,18 +270,16 @@ void Snake(bool solo)
     }
     
     else{
-      lcd.clear();
-      lcd.setCursor(0,0);
+      TFTscreen.background(0,0,0);
       if(whoIsDead == 'h')
       {
-        lcd.print("Le client gagne");
+        TFTscreen.text("Le client gagne", 6, 5);
       }
       else
       {
-        lcd.print("L'hôte gagne");
+        TFTscreen.text("L'hôte gagne", 6, 5);
       }
-      lcd.setCursor(0,1);
-      lcd.print("UP : Recommencer");
+      TFTscreen.text("UP : Recommencer", 6, 20);
     }
 
     if(haut)
@@ -455,7 +423,7 @@ void TourDeJeu(bool solo, bool isHost, int haut, int bas, int gauche, int droite
 }
 
 
-void Deplacement(char terrainF[][16], int iAvant, int jAvant, int iApres, int jApres, char queueHistoriqueF[], int queueF, char direction, int posActuelleF[]) {
+void Deplacement(char terrainF[][53], int iAvant, int jAvant, int iApres, int jApres, char queueHistoriqueF[], int queueF, char direction, int posActuelleF[]) {
   //mise à jour de l'avant du serpent
   SetElement(terrainF, iAvant, jAvant, 'u');
   SetElement(terrainF, iApres, jApres, 'U');
@@ -498,7 +466,7 @@ void Deplacement(char terrainF[][16], int iAvant, int jAvant, int iApres, int jA
   
 }
 
-void Mange(char terrainF[][16], int iAvant, int jAvant, int iApres, int jApres, char queueHistoriqueF[], int queueF, char direction, int posActuelleF[]) {
+void Mange(char terrainF[][53], int iAvant, int jAvant, int iApres, int jApres, char queueHistoriqueF[], int queueF, char direction, int posActuelleF[]) {
   SetElement(terrainF, iAvant, jAvant, 'u');
   SetElement(terrainF, iApres, jApres, 'U');
   ActualiserPosition(posActuelleF, direction);
@@ -544,7 +512,7 @@ void ActualiserQueueHistorique(char queueHistoriqueF[], char direction, bool man
   }
 }
 
-void GenerationFruit(char terrainF[][16])
+void GenerationFruit(char terrainF[][53])
 {
   int caseLibreI[64];
   int count = 0;
@@ -570,13 +538,16 @@ void GenerationFruit(char terrainF[][16])
 
 }
 
-void SetElementLCD(char terrainF[][16], int i1, int j2, char element) {
+/*
+void SetElementLCD(char terrainF[][53], int i1, int j2, char element) {
   terrain[i1][j2] = element;
   lcd.setCursor(j2, i1);
   lcd.print(terrainF[i1][j2]);
 }
+*/
 
-void SetElement(char terrain[][16], int i1, int j2, char element) {
+/*
+void SetElement(char terrain[][53], int i1, int j2, char element) {
   terrain[i1][j2] = element;
   
   int jlcd = j2;
@@ -619,6 +590,25 @@ void SetElement(char terrain[][16], int i1, int j2, char element) {
     lcd.write('x');
   }
 }
+*/
+
+
+void SetElement(char terrain[][53], int i1, int j2, char element, int r=255, int g=255, int b=255) {
+  if (element = ' ') {
+  	TFTscreen.stroke(0, 0, 0);
+  	TFTscreen.rect(3*j2, 3*i1, 3, 3);
+  	TFTscreen.point(3*j2+1, 3*i1+1);
+  }
+  else if (element = 'F') {
+    TFTscreen.stroke(r, g, b);
+  	TFTscreen.circle(3*j2+1, 3*i1+1, 1);
+  }
+  else {
+    TFTscreen.stroke(r, g, b);
+  	TFTscreen.rect(3*j2, 3*i1, 3, 3);
+  }
+}
+
 
 void BluetoothWrite(char Char)
 {
@@ -629,4 +619,14 @@ char BluetoothRead()
 {
 
   return ;
+}
+
+void readSerial(int* haut, int* bas, int* gauche, int* droite) {
+  char c = 'x';
+  if (Serial.available()) c = Serial.read();
+  if (c =='z') {*haut = 1; *bas = 0; *gauche = 0; *droite = 0;}
+  else if (c =='s') {*haut = 0; *bas = 1; *gauche = 0; *droite = 0;}
+  else if (c =='q') {*haut = 0; *bas = 0; *gauche = 1; *droite = 0;}
+  else if (c =='d') {*haut = 0; *bas = 0; *gauche = 0; *droite = 1;}
+  else {*haut = 0; *bas = 0; *gauche = 0; *droite = 0;}
 }
