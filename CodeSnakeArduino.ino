@@ -73,10 +73,7 @@ void setup() {
 
 //##################################################################################################################################################################################
 void loop() {
-  Serial.print("Start:");
-  Serial.println(start);
   if (start) {
-      Serial.println("if start");
       //écran d'accueil
       TFTscreen.background(0,0,0);
       TFTscreen.stroke(255, 255, 255);
@@ -92,7 +89,6 @@ void loop() {
 
     // SOLO GAME
       if(haut){
-        Serial.println("if haut");
         initialisation = true;
         solo = true;
         gameOn = true;
@@ -180,19 +176,20 @@ void loop() {
 } //fin void loop
 
 //##################################################################################################################################################################################
-void SetElement(int i1, int j2, char element, int r=255, int g=255, int b=255) {
+void SetElement(char terrain[][53], int i, int j, char element, int r=255, int g=255, int b=255) {
+  terrain[i][j] = element;
   if (element == ' ') {
     TFTscreen.stroke(0, 0, 0);
-    TFTscreen.rect(3*j2, 3*i1, 3, 3);
-    TFTscreen.point(3*j2+1, 3*i1+1);
+    TFTscreen.rect(3*j, 3*i, 3, 3);
+    TFTscreen.point(3*j+1, 3*i+1);
   }
   else if (element == 'F') {
     TFTscreen.stroke(r, g, b);
-    TFTscreen.circle(3*j2+1, 3*i1+1, 1);
+    TFTscreen.circle(3*j+1, 3*i+1, 1);
   }
   else {
-    TFTscreen.stroke(255, 255, 255);
-    TFTscreen.rect(3*j2, 3*i1, 3, 3);
+    TFTscreen.stroke(r, g, b);
+    TFTscreen.rect(3*j, 3*i, 3, 3);
   }
 }
 
@@ -200,7 +197,7 @@ void SetElement(int i1, int j2, char element, int r=255, int g=255, int b=255) {
 void Snake(bool solo, int* queue, int* queue1, char terrain[][largeur], int posActuelle[2], char queueHistorique,
             bool* start, bool* gameOn, bool* initialisation, bool* death)
 {
-  if(initialisation)
+  if(*initialisation)
   {
     // la fonction SetElement a besoin d'un tableau rempli
       
@@ -231,35 +228,29 @@ void Snake(bool solo, int* queue, int* queue1, char terrain[][largeur], int posA
     TFTscreen.background(0, 0, 0);
     if(solo)
     {
-      Serial.println("solo");delay(200);
-      SetElement(hauteur/2, largeur/2, 'U');
-      Serial.println("setElement");delay(500);
+      SetElement(terrain, hauteur/2, largeur/2, 'U');
       posActuelle[0] = hauteur / 2;
       posActuelle[1] = largeur / 2;
-      Serial.println(posActuelle[0]);delay(100);
-      Serial.println(posActuelle[1]);delay(500);
       *queue = 0;
       memset(queueHistorique, ' ', *queue);
-      Serial.println("memset done");delay(100);
       *start = false;
       *death = false;
+      *initialisation=false;
       Serial.print("nbr_pixels:");
-      Serial.println(hauteur*largeur); delay(500);
       GenerationFruit(terrain);
-      Serial.println("FruitDone");delay(500);
       delay(500);
     }
     else
     {
       //init j1
-      SetElement(hauteur/2, largeur/4, 'U');
+      SetElement(terrain, hauteur/2, largeur/4, 'U');
       posActuelle[0] = hauteur / 2;
       posActuelle[1] = largeur / 4;
       *queue = 0;
       memset(queueHistorique, ' ', *queue);
       
       //init j2
-      SetElement(hauteur/2, largeur*3/4, 'U');
+      SetElement(terrain, hauteur/2, largeur*3/4, 'U');
       posActuelle1[0] = hauteur / 2;
       posActuelle1[1] = largeur * 3 / 4;
       *queue1 = 0;
@@ -268,22 +259,22 @@ void Snake(bool solo, int* queue, int* queue1, char terrain[][largeur], int posA
       //init gameInfo
       *start = false;
       *death = false;
+      *initialisation=false;
       GenerationFruit(terrain);
       delay(500);
     }
-    Serial.print("Start:");
-    Serial.println(*start);delay(500);
   }
 
-  Serial.println("InitEnd");delay(500);
 
-  haut = digitalRead(pinHaut);
-  bas = digitalRead(pinBas);
-  droite = digitalRead(pinDroite);
-  gauche = digitalRead(pinGauche);
+  // Obtention de la direction :
+  
+  // haut = digitalRead(pinHaut);
+  // bas = digitalRead(pinBas);
+  // droite = digitalRead(pinDroite);
+  // gauche = digitalRead(pinGauche);
+
+  // Depuis un ordinateur, avec zqsd :
   readSerial(&haut, &bas, &gauche, &droite);
-  Serial.println(haut);delay(100);
-  Serial.print("Death:");Serial.println(*death);delay(100);
   
 
 
@@ -324,7 +315,7 @@ void Snake(bool solo, int* queue, int* queue1, char terrain[][largeur], int posA
   }
 
   if(solo or (isHost && hostPlay)){
-    TourDeJeu(solo, isHost, haut, bas, gauche, droite, *queue, terrain, posActuelle, queueHistorique);
+    TourDeJeu(solo, isHost, haut, bas, gauche, droite, queue, terrain, posActuelle, queueHistorique);
   }
   
   else if(hostUpdate){
@@ -334,19 +325,19 @@ void Snake(bool solo, int* queue, int* queue1, char terrain[][largeur], int posA
       {
         char temp = BluetoothRead();
 
-        if(temp == 'h'){TourDeJeu(solo, isHost, 1, 0, 0, 0, *queue, terrain, posActuelle, queueHistorique);}
-        else if(temp == 'b'){TourDeJeu(solo, isHost, 0, 1, 0, 0, *queue, terrain, posActuelle, queueHistorique);}
-        else if(temp == 'g'){TourDeJeu(solo, isHost, 0, 0, 1, 0, *queue, terrain, posActuelle, queueHistorique);}
-        else if(temp == 'd'){TourDeJeu(solo, isHost, 0, 0, 0, 1, *queue, terrain, posActuelle, queueHistorique);}  
+        if(temp == 'h'){TourDeJeu(solo, isHost, 1, 0, 0, 0, queue, terrain, posActuelle, queueHistorique);}
+        else if(temp == 'b'){TourDeJeu(solo, isHost, 0, 1, 0, 0, queue, terrain, posActuelle, queueHistorique);}
+        else if(temp == 'g'){TourDeJeu(solo, isHost, 0, 0, 1, 0, queue, terrain, posActuelle, queueHistorique);}
+        else if(temp == 'd'){TourDeJeu(solo, isHost, 0, 0, 0, 1, queue, terrain, posActuelle, queueHistorique);}  
       }
       else //il faut update l'hote
       {
         char temp = BluetoothRead();
   
-        if(temp == 'h'){TourDeJeu(solo, isHost, 1, 0, 0, 0, *queue1, terrain, posActuelle1, queueHistorique1);}
-        else if(temp == 'b'){TourDeJeu(solo, isHost, 0, 1, 0, 0, *queue1, terrain, posActuelle1, queueHistorique1);}
-        else if(temp == 'g'){TourDeJeu(solo, isHost, 0, 0, 1, 0, *queue1, terrain, posActuelle1, queueHistorique1);}
-        else if(temp == 'd'){TourDeJeu(solo, isHost, 0, 0, 0, 1, *queue1, terrain, posActuelle1, queueHistorique1);}  
+        if(temp == 'h'){TourDeJeu(solo, isHost, 1, 0, 0, 0, queue1, terrain, posActuelle1, queueHistorique1);}
+        else if(temp == 'b'){TourDeJeu(solo, isHost, 0, 1, 0, 0, queue1, terrain, posActuelle1, queueHistorique1);}
+        else if(temp == 'g'){TourDeJeu(solo, isHost, 0, 0, 1, 0, queue1, terrain, posActuelle1, queueHistorique1);}
+        else if(temp == 'd'){TourDeJeu(solo, isHost, 0, 0, 0, 1, queue1, terrain, posActuelle1, queueHistorique1);}  
       }
     }  
   }
@@ -364,12 +355,16 @@ void Snake(bool solo, int* queue, int* queue1, char terrain[][largeur], int posA
 }//fin Snake
 
 //##################################################################################################################################################################################
-void TourDeJeu(bool solo, bool isHost, int haut, int bas, int gauche, int droite, int queue, char terrain[][largeur], int posActuelle[], char queueHistorique[])
+void TourDeJeu(bool solo, bool isHost, int haut, int bas, int gauche, int droite, int* queue, char terrain[][largeur], int posActuelle[], char queueHistorique[])
 {
+  Serial.print(" haut: ");Serial.print(terrain[posActuelle[0] - 1][posActuelle[1]]);
+  Serial.print(" bas: ");Serial.print(terrain[posActuelle[0] + 1][posActuelle[1]]);
+  Serial.print(" gauche: ");Serial.print(terrain[posActuelle[0]][posActuelle[1] - 1]);
+  Serial.print(" droite: ");Serial.print(terrain[posActuelle[0]][posActuelle[1] + 1]);
+  Serial.print(" queue historique: ");Serial.println(queueHistorique);
   //On assigne des priorités aux directions en cas de conflit càd si plusieurs boutons sont pressés en même temps : haut > droite > bas > gauche
   if (haut)
   {
-    
     if ( terrain[posActuelle[0] - 1][posActuelle[1]] == 'u' or posActuelle[0] == 0)
     {
       death = true;
@@ -459,28 +454,30 @@ void TourDeJeu(bool solo, bool isHost, int haut, int bas, int gauche, int droite
 
 
 //##################################################################################################################################################################################
-void Deplacement(char terrainF[][53], int iAvant, int jAvant, int iApres, int jApres, char queueHistoriqueF[], int queueF, char direction, int posActuelleF[]) {
+void Deplacement(char terrainF[][53], int iAvant, int jAvant, int iApres, int jApres, char queueHistoriqueF[], int* queueF, char direction, int posActuelleF[]) {
+  Serial.print("Deplacement :");Serial.print(direction);Serial.print(iAvant);Serial.print(jAvant);Serial.print(iApres);Serial.println(jApres);
+  Serial.println(*queueF);
   //mise à jour de l'avant du serpent
-  SetElement(terrainF, iAvant, jAvant, 'u');
-  SetElement(terrainF, iApres, jApres, 'U');
+  SetElement(terrain, iAvant, jAvant, 'u');
+  SetElement(terrain, iApres, jApres, 'U');
 
   //mise à jour de l'arrière du serpent
   int iToDelete = iAvant;
   int jToDelete = jAvant;
-  Serial.print(queueF);
+  //Serial.print(queueF);
 
-  if (queueF > 0)
+  if (*queueF > 0)
   {
-    for (int i = queueF - 1; i > -1; i--)
+    for (int i = *queueF - 1; i > -1; i--)
     {
       //ATTENTION INVERSION CAR ON REMONTE A LENVERS (de la tete à la queue)
       switch (queueHistoriqueF[i]) {
         case 'h':
-          iToDelete--;
+          iToDelete++;
           break;
 
         case 'b':
-          iToDelete++;
+          iToDelete--;
           break;
 
         case 'd':
@@ -503,9 +500,9 @@ void Deplacement(char terrainF[][53], int iAvant, int jAvant, int iApres, int jA
 }
 
 //##################################################################################################################################################################################
-void Mange(char terrainF[][53], int iAvant, int jAvant, int iApres, int jApres, char queueHistoriqueF[], int queueF, char direction, int posActuelleF[]) {
-  SetElement(terrainF, iAvant, jAvant, 'u');
-  SetElement(terrainF, iApres, jApres, 'U');
+void Mange(char terrainF[][53], int iAvant, int jAvant, int iApres, int jApres, char queueHistoriqueF[], int* queueF, char direction, int posActuelleF[]) {
+  SetElement(terrain, iAvant, jAvant, 'u');
+  SetElement(terrain, iApres, jApres, 'U');
   ActualiserPosition(posActuelleF, direction);
   ActualiserQueueHistorique(queueHistorique, direction, true, queueF);
   GenerationFruit(terrainF);
@@ -535,15 +532,20 @@ void ActualiserPosition(int posActuelleF[], char direction)
 }
 
 //##################################################################################################################################################################################
-void ActualiserQueueHistorique(char queueHistoriqueF[], char direction, bool mange, int queueF)
+void ActualiserQueueHistorique(char queueHistoriqueF[], char direction, bool mange, int* queueF)
 {
   if (mange)
   {
-    queueHistoriqueF[queueF] = direction;
+    Serial.print("Queue histo:");
+    Serial.print(queueHistoriqueF);
+    queueHistoriqueF[*queueF] = direction;
+    *queueF +=1;
+    Serial.print("Queue histo:");
+    Serial.println(queueHistoriqueF);
   }
   else
   {
-    for (int i = 0; i < queue - 1; i++)
+    for (int i = 0; i < *queueF - 1; i++)
     {
       queueHistoriqueF[i+1] = queueHistoriqueF[i];
     }
@@ -554,8 +556,6 @@ void ActualiserQueueHistorique(char queueHistoriqueF[], char direction, bool man
 //##################################################################################################################################################################################
 void GenerationFruit(char terrainF[][53])
 {
-  Serial.println("GenerationFruit"); delay(500);
-
   int i = random(hauteur);
   int j = random(largeur);
   while (terrainF[i][j] != ' ') {
@@ -563,9 +563,8 @@ void GenerationFruit(char terrainF[][53])
     int j = random(largeur);
   }
   
-  SetElement(i, j, 'F');
-  
-  Serial.print("Fruit en :");Serial.print(i);Serial.print("x");Serial.println(j); delay(2000);
+  SetElement(terrain, i, j, 'F');
+  Serial.print("Fruit en :");Serial.print(i);Serial.print("x");Serial.println(j);
 
 }
 
