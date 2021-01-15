@@ -357,11 +357,7 @@ void Snake(bool solo, int* queue, int* queue1, char terrain[][largeur], int posA
 //##################################################################################################################################################################################
 void TourDeJeu(bool solo, bool isHost, int haut, int bas, int gauche, int droite, int* queue, char terrain[][largeur], int posActuelle[], char queueHistorique[])
 {
-  Serial.print(" haut: ");Serial.print(terrain[posActuelle[0] - 1][posActuelle[1]]);
-  Serial.print(" bas: ");Serial.print(terrain[posActuelle[0] + 1][posActuelle[1]]);
-  Serial.print(" gauche: ");Serial.print(terrain[posActuelle[0]][posActuelle[1] - 1]);
-  Serial.print(" droite: ");Serial.print(terrain[posActuelle[0]][posActuelle[1] + 1]);
-  Serial.print(" queue historique: ");Serial.println(queueHistorique);
+  //Serial.print(" queue historique: ");Serial.println(queueHistorique);
   //On assigne des priorités aux directions en cas de conflit càd si plusieurs boutons sont pressés en même temps : haut > droite > bas > gauche
   if (haut)
   {
@@ -468,7 +464,7 @@ void Deplacement(char terrainF[][53], int iAvant, int jAvant, int iApres, int jA
 
   if (*queueF > 0)
   {
-    for (int i = *queueF - 1; i > -1; i--)
+    for (int i = 0; i < *queueF; i++)
     {
       //ATTENTION INVERSION CAR ON REMONTE A LENVERS (de la tete à la queue)
       switch (queueHistoriqueF[i]) {
@@ -495,7 +491,7 @@ void Deplacement(char terrainF[][53], int iAvant, int jAvant, int iApres, int jA
 
   //Actualiser posActuelle + queueHistorique
   ActualiserPosition(posActuelleF, direction);
-  ActualiserQueueHistorique(queueHistorique, direction, false, queueF);
+  ActualiserQueueHistorique(queueHistoriqueF, direction, false, queueF);
   
 }
 
@@ -504,7 +500,7 @@ void Mange(char terrainF[][53], int iAvant, int jAvant, int iApres, int jApres, 
   SetElement(terrain, iAvant, jAvant, 'u');
   SetElement(terrain, iApres, jApres, 'U');
   ActualiserPosition(posActuelleF, direction);
-  ActualiserQueueHistorique(queueHistorique, direction, true, queueF);
+  ActualiserQueueHistorique(queueHistoriqueF, direction, true, queueF);
   GenerationFruit(terrainF);
 }
 
@@ -536,21 +532,25 @@ void ActualiserQueueHistorique(char queueHistoriqueF[], char direction, bool man
 {
   if (mange)
   {
-    Serial.print("Queue histo:");
-    Serial.print(queueHistoriqueF);
-    queueHistoriqueF[*queueF] = direction;
     *queueF +=1;
-    Serial.print("Queue histo:");
-    Serial.println(queueHistoriqueF);
+    for (int i = *queueF - 1; i > 0 ; i--)
+    {
+      queueHistoriqueF[i] = queueHistoriqueF[i-1];
+    }
+    queueHistoriqueF[0] = direction;
+    Serial.print(" 0:");
+    Serial.print(queueHistoriqueF[0]);
   }
   else
   {
-    for (int i = 0; i < *queueF - 1; i++)
+    for (int i = *queueF - 1; i > 0 ; i--)
     {
-      queueHistoriqueF[i+1] = queueHistoriqueF[i];
+      queueHistoriqueF[i] = queueHistoriqueF[i-1];
     }
     queueHistoriqueF[0] = direction;
   }
+  Serial.print("Fin histo:");Serial.print(*queueF);Serial.print("-");
+  Serial.println(queueHistoriqueF);
 }
 
 //##################################################################################################################################################################################
