@@ -467,6 +467,7 @@ void Deplacement(char terrainF[][53], int iAvant, int jAvant, int iApres, int jA
     for (int i = 0; i < *queueF; i++)
     {
       //ATTENTION INVERSION CAR ON REMONTE A LENVERS (de la tete à la queue)
+      Serial.print(queueHistoriqueF[i]);Serial.print('x');
       switch (queueHistoriqueF[i]) {
         case 'h':
           iToDelete++;
@@ -485,6 +486,7 @@ void Deplacement(char terrainF[][53], int iAvant, int jAvant, int iApres, int jA
           break;
       }
     }
+    //Serial.println(';');
   }
 
   SetElement(terrain, iToDelete, jToDelete, ' ');
@@ -533,6 +535,7 @@ void ActualiserQueueHistorique(char queueHistoriqueF[], char direction, bool man
   if (mange)
   {
     *queueF +=1;
+    queueHistoriqueF[*queueF] = '\0';
     for (int i = *queueF - 1; i > 0 ; i--)
     {
       queueHistoriqueF[i] = queueHistoriqueF[i-1];
