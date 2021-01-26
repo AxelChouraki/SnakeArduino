@@ -184,11 +184,11 @@ void SetElement(char terrain[][53], int i, int j, char element, int r=255, int g
     TFTscreen.point(3*j+1, 3*i+1);
   }
   else if (element == 'F') {
-    TFTscreen.stroke(r, g, b);
+    TFTscreen.stroke(b, g, r);
     TFTscreen.circle(3*j+1, 3*i+1, 1);
   }
   else {
-    TFTscreen.stroke(r, g, b);
+    TFTscreen.stroke(b, g, r);
     TFTscreen.rect(3*j, 3*i, 3, 3);
   }
 }
@@ -563,7 +563,7 @@ void GenerationFruit(char terrainF[][53])
     int j = random(largeur);
   }
   
-  SetElement(terrain, i, j, 'F');
+  SetElement(terrain, i, j, 'F', 225, 0, 0);
   Serial.print("Fruit en :");Serial.print(i);Serial.print("x");Serial.println(j);
 
 }
