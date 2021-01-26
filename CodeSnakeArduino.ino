@@ -1,11 +1,14 @@
 #include <Vector.h> // pour utiliser les vecteurs
-#include <LiquidCrystal.h> //librairie pour utiliser un lcd
 // include TFT and SPI libraries for the screen
-#include <TFT.h>  
-#include <SPI.h>
+#include <TFT.h>  // Gestion de l'écran
+#include <SPI.h>  // Gestion de l'écran
+# include <SoftwareSerial.h>  // Gestion du canal série
 
 //Initialisation bluetooth
-//bluetoothSerial
+// initialisation du canal série, à remplacer par du bluetooth un jour
+SoftwareSerial mySerial(0, 1);  // RX, TX
+const int nombre_char = 4;  // nombre de caractères lisibles
+const char motifsAcceptes[nombre_char] = {'h', 'b', 'g', 'd'};  // liste de ces caractères
 
 
 //pin de controle
@@ -625,14 +628,22 @@ void SetElement(char terrain[][53], int i1, int j2, char element) {
 
 void BluetoothWrite(char Char)
 {
-  
+  mySerial.write(Char);
 }
 
-char BluetoothRead()
+char BluetoothRead() // return 'r' by default
 {
-
-  return ;
+  char buffer = 'r'; // buffer for reading
+  if (mySerial.available()>0) {
+    char new_c = mySerial.read();  // we read what arrives
+    for (int i = 0; i < nombre_char; i++){
+      //we put it in the buffer only if we are expecting it
+      if (new_c == motifsAcceptes[i]){buffer = new_c;}
+    }
+  }
+  return buffer;
 }
+
 
 void readSerial(int* haut, int* bas, int* gauche, int* droite) {
   char c = 'x';
